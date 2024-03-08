@@ -29,12 +29,10 @@ export class Watcher extends EventEmitter {
         continue;
       }
       torrentOrMagnets.add(item);
-    }
-    torrentOrMagnets.forEach(item => {
       if (!this.#previousList.has(item)) {
         this.emit('add', resolve(this.directory, item));
       }
-    });
+    }
     this.#previousList = torrentOrMagnets;
   }
 
