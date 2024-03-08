@@ -1,0 +1,16 @@
+version: '3.4'
+
+services:
+  real-debrid-blackhole:
+    image: real-debrid-blackhole
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+      REAL_DEBRID_TOKEN: <Your Token from https://real-debrid.com/apitoken>
+      DATA: /data
+      LOG_LEVEL: info
+      DOWNLOADER: Fetch
+    volumes:
+      - ./blackhole:/data
