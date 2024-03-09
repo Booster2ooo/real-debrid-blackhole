@@ -3,6 +3,5 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 export default pino({ 
-  level: process.env.LOG_LEVEL || 'info',
-  msgPrefix: '[Main]'
+  level: process.env.LOG_LEVEL || 'info'
 });

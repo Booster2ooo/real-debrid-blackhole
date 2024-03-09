@@ -7,7 +7,7 @@
   "scripts": {
     "tsc": "npx tsc",
     "pino-pretty": "npx pino-pretty",
-    "main": "node dist/main.js",
+    "main": "node ./dist/main.js",
     "build": "npm run tsc",
     "dev": "npm run tsc && npm run main",
     "start": "npm run main",

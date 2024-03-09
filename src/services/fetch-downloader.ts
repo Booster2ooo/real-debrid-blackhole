@@ -13,8 +13,7 @@ const logger = l.child({}, { msgPrefix: '[FetchDownloader]' });
  */
 export class FetchDownloader implements IDownloader {
   /** @inheritdoc */
-  async download(url: string, destination: string): Promise<void> {
-    const tempDestination = destination + '.part';
+  async download(url: string, tempDestination: string, destination: string): Promise<void> {
     logger.debug(`Starting download of '${url}' to '${destination}`, { url, destination , tempDestination });
     const response = await fetch(url);
     if (response.status < 200 || response.status >= 300) {
@@ -23,7 +22,7 @@ export class FetchDownloader implements IDownloader {
     const data = Readable.fromWeb(response.body as ReadableStream<any>);
     const writer = createWriteStream(tempDestination);
     await pipeline(data, writer);
-    logger.trace(`Renaming`, { url, destination , tempDestination });
+    logger.trace(`Moving out from temp`, { url, destination , tempDestination });
     await rename(tempDestination, destination);
     logger.debug(`Download completed`, { url, destination , tempDestination });
   }

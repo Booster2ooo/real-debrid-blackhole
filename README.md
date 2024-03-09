@@ -9,8 +9,9 @@ Configuration via env variables (see `docker-compose.yml` ):
 | --- | --- |
 | REAL_DEBRID_TOKEN | Your Real-Debrid.com token. Get it from https://real-debrid.com/apitoken |
 | BLACKHOLE | A directory where to pick up .torrent or .magnet files from (overrides DATA) |
-| DOWNLOADS | A directory where the media will be downloaded to (overrides DATA) |
-| DATA | A directory containing both a `torrents/` (blackhole - input) and a `downloads/` (downloads - output) directories |
+| DOWNLOADS | A directory where the completed media will be moved to (overrides DATA) |
+| IN_PROGESS | A directory where the media are being downloaded, before being moved to DOWNLOADS. (overrides DATA, default = BLACKHOLE + /in-progress)|
+| DATA | A single root directory containing BLACKHOLE, DOWNLOADS and IN_PROGESS* such as |
 | DOWNLOADER | The downloader to use (see below) |
 | LOG_LEVEL | A [pino](https://github.com/pinojs/pino) log level |
 | ARIA2_HOST | (For Aria2 downloader) The Aria2 server host |
@@ -18,6 +19,11 @@ Configuration via env variables (see `docker-compose.yml` ):
 | ARIA2_PATH | (For Aria2 downloader) The Aria2 server json rpc path |
 | ARIA2_SECURE | (For Aria2 downloader) true for https, false otherwise |
 | ARIA2_SECRET | (For Aria2 downloader) The Aria2 server rpc secret |
+
+\* The DATA folders structure is a shortcut for the following config:
+- BLACKHOLE = DATA + /torrents
+- IN_PROGESS = DATA + /torrents/in-progress
+- DOWNLOADS = DATA + /downloads
 
 ## Downloaders
 The app features 3 downloader:

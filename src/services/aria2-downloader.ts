@@ -1,3 +1,4 @@
+import { rename } from 'fs/promises';
 import { basename } from 'path';
 import { Aria2Options, IDownloader } from '../models/index.js';
 import Aria2 from 'aria2';
@@ -35,15 +36,24 @@ export class Aria2Downloader implements IDownloader {
   }
 
   /** @inheritdoc */
-  async download(url: string, destination: string): Promise<void> {
+  async download(url: string, tempDestination: string, destination: string): Promise<void> {
+    // tempDestination should be defined at Aria2 level and accessible to this app
     const filename = basename(destination);
     logger.debug(`Starting download of '${url}' as '${filename}`, { url, filename });
     const gid = await this.#aria2.call('addUri', [url], { out: filename } );
     return new Promise((resolve, reject) => {
-      this.#aria2.on('onDownloadComplete', (evt: any[]) => {
+      this.#aria2.on('onDownloadComplete', async (evt: any[]) => {
         if (evt.some(item => item.gid === gid)) {
           logger.debug(`Download completed`, { url, filename });
-          resolve();
+          try {
+            logger.trace(`Moving out from temp`, { url, destination , tempDestination });
+            await rename(tempDestination, destination);
+            resolve();
+          }
+          catch (ex) {
+            logger.debug(`Unable to move download from '${tempDestination}' to '${destination}'`, ex);
+            reject(`Unable to move download from '${tempDestination}' to '${destination}'`);
+          }
         }
       });
       this.#aria2.on('onDownloadError', (evt: any[]) => {

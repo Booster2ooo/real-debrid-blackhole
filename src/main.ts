@@ -1,27 +1,19 @@
 import { unlink } from 'fs/promises';
-import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
 import dotenv from 'dotenv';
 //import Watcher from 'watcher';
 import { Watcher } from './services/index.js';
 import l from './logger.js';
+import { resolvePath } from './utils.js';
 
 dotenv.config();
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const __filename = fileURLToPath(import.meta.url);
 const downloadManager = __filename.replace('main', 'download-manager');
 const logger = l;
-
-let blackhole: string | undefined = process.env.BLACKHOLE;
-if (!blackhole && process.env.DATA) {
-  blackhole = resolve(process.env.DATA, 'torrents');
-}
+const blackhole: string | undefined = resolvePath(process.env.BLACKHOLE, ['torrents']);
 if (!blackhole) {
   throw new Error('Missing blackhole configuration');
-}
-if (blackhole.startsWith('.')) {
-  blackhole = resolve(__dirname, blackhole);
 }
 
 let watcher: Watcher | undefined;
@@ -34,19 +26,19 @@ try {
     if (watcher) watcher.close();
     process.exit(0);
   }
-  process.on('SIGTERM', () => {
+  process.once('SIGTERM', () => {
     logger.info('\nSIGTERM signal received.');
     exit();
   });
-  process.on('SIGINT', () => {
+  process.once('SIGINT', () => {
     logger.info('\nSIGINT signal received.');
     exit();
   });
-  process.on('SIGQUIT', () => {
+  process.once('SIGQUIT', () => {
     logger.info('\nSIGQUIT signal received.');
     exit();
   });
-  process.on('exit', () => {
+  process.once('exit', () => {
     logger.info('Exiting');
   });
 
@@ -56,7 +48,7 @@ try {
       return;
     }
     const child = spawn('node', [downloadManager, filePath]);
-    child.on('exit', async (code, signal) => {
+    child.once('exit', async (code, signal) => {
       logger.debug(`child process exited with code ${code} and signal ${signal}`);
       if (!code) {
         logger.debug(`Removing .torrent file '${filePath}'`);
@@ -72,18 +64,20 @@ try {
       }
     });
     child.stdout.on('data', (data) => {
-      logger.debug(`child stdout:\n${data}`);
+      process.stdout.write(data.toString());
+      //logger.debug(data.toString());
     });
     child.stderr.on('data', (data) => {
-      logger.debug(`child stderr:\n${data}`);
+      process.stdout.write(data.toString());
+      //logger.debug(data.toString());
     });
-    child.on('close', (code, signal) => {
+    child.once('close', (code, signal) => {
       logger.debug(`child process close all stdio with code ${code} and signal ${signal}`);
     });
-    child.on('error ', (err) => {
+    child.once('error ', (err) => {
       logger.debug('child process error ' + err);
     });
-    child.on('disconnect ', () => {
+    child.once('disconnect ', () => {
       logger.debug('child process disconnected');
     });
   });

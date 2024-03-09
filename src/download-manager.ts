@@ -1,6 +1,5 @@
 import { readFile, stat } from 'fs/promises';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import l from './logger.js';
 import {
@@ -15,32 +14,25 @@ import {
   FetchDownloader,
   ReadDebridClient
 } from './services/index.js';
+import { resolvePath } from './utils.js';
 
 dotenv.config();
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const argv = process.argv.slice(2);
 const sleep = async (delay: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, delay));
 const logger = l.child({}, { msgPrefix: '[DownloadManager]' });
 
 (async() => {
   const target = argv?.[0];
-  logger.debug(`target: '${target}'`);
   if (!target) {
     throw new Error('Missing torrent or magnet link');
   }
-  let destination = process.env.DOWNLOADS;
-  if (!destination && process.env.DATA) {
-    logger.trace(`No DOWNLOADS directory provided, falling back on DATA`);
-    destination = join(process.env.DATA, 'downloads');
-  }
+  logger.info(`Starting download for '${target}'`);
+  const destination = resolvePath(process.env.DOWNLOADS, ['downloads']);
+  const tempDestination = resolvePath(process.env.IN_PROGESS, ['torrents', 'in-progress']) || destination;
   if (!destination && process.env.DOWNLOADER?.toLowerCase() === 'fetch') {
     throw new Error(`Missing downloads destination configuration`);
   }
-  if (destination?.startsWith('.')) {
-    logger.trace(`Destination is relative, joining to __dirname`);
-    destination = join(__dirname, destination);
-  }
-  logger.debug(`destination: '${destination}'`);
+  logger.debug(`destination: '${destination}' - temp destination: ${tempDestination}`);
   logger.debug(`downloader: '${process.env.DOWNLOADER}' (${process.env.DOWNLOADER?.toLowerCase()})`);
   try {
     const content = await readFile(target);
@@ -98,13 +90,14 @@ const logger = l.child({}, { msgPrefix: '[DownloadManager]' });
           break;
         default:
           logger.debug(`Selected no downloader, outputing links`);
-          console.log(unrestrictedLinks.join('\n'));
+          unrestrictedLinks.forEach(link => console.log(link.download));
           process.exit(0);
       }
       for(let unrestricted of unrestrictedLinks) {
         try {
           const { filename, download, filesize } = unrestricted;
-          const fileDestination = join(destination!, filename);
+          const fileTempDestination = join(tempDestination, filename);
+          const fileDestination = join(destination, filename);
           try {
             const stats = await stat(fileDestination);
             if (stats.size === filesize) {
@@ -113,7 +106,7 @@ const logger = l.child({}, { msgPrefix: '[DownloadManager]' });
             }
           }
           catch {}
-          await downloader.download(download, fileDestination);
+          await downloader.download(download, fileTempDestination, fileDestination);
         }
         catch (ex) {
           logger.warn(`Failed to download from '${unrestricted.download}'`, ex);
@@ -138,9 +131,11 @@ const logger = l.child({}, { msgPrefix: '[DownloadManager]' });
       logger.debug(`Removing torrent`, torrentInfo);
       await rdClient.deleteTorrent(torrentInfo.id);      
     }
+    logger.info(`Processed '${target}'`);
     process.exit();
   }
   catch (ex) {
+    logger.info(`Couldn't process '${target}'`);
     logger.error(ex);
     process.exit(1);
   }
