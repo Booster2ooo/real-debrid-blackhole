@@ -10,6 +10,7 @@ import {
   UnrestrictedLink
 } from '../models/index.js';
 import l from '../logger.js';
+import { retryableFetch } from '../utils.js';
 
 const logger = l.child({}, { msgPrefix: '[ReadDebridClient]' });
 
@@ -39,7 +40,7 @@ export class ReadDebridClient {
       init.body = stringify(init.body as any);
     }
     const url = `${this.#API_URI}${input}`;
-    const response = await fetch(url, {
+    const response = await retryableFetch(url, {
       headers: {
         'Authorization': 'Bearer ' + this.#token,
         'Content-Type': 'application/x-www-form-urlencoded',

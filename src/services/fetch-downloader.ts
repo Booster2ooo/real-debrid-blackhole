@@ -5,6 +5,7 @@ import { pipeline } from 'stream/promises';
 import { ReadableStream } from 'stream/web';
 import { IDownloader } from '../models/downloader.js';
 import l from '../logger.js';
+import { retryableFetch } from '../utils.js';
 
 const logger = l.child({}, { msgPrefix: '[FetchDownloader]' });
 
@@ -15,7 +16,7 @@ export class FetchDownloader implements IDownloader {
   /** @inheritdoc */
   async download(url: string, tempDestination: string, destination: string): Promise<void> {
     logger.debug(`Starting download of '${url}' to '${destination}`, { url, destination , tempDestination });
-    const response = await fetch(url);
+    const response = await retryableFetch(url);
     if (response.status < 200 || response.status >= 300) {
       throw new Error(`FetchDownloader: The server returned an error for '${url}': (${response.status}) ${response.statusText}`);
     }

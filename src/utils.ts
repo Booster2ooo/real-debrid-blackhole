@@ -23,3 +23,33 @@ export function resolvePath(path: string | undefined, dataRelative: string[]): s
   }
   return path;
 }
+
+/**
+ * Wait for the specified amount of ms before resolving
+ * @param delay The number of millisec to wait before resolving
+ * @returns 
+ */
+export async function sleep(delay: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+/**
+ * Fetch with possible retries
+ * @param input See fetch
+ * @param init See fetch
+ * @param retryCount The number of possible retries (default 3)
+ * @returns  See fetch
+ */
+export async function retryableFetch(input: string | URL | globalThis.Request, init?: RequestInit, retryCount: number = 3): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  }
+  catch (ex) {
+    retryCount--;
+    if (!retryCount) {
+      throw ex;
+    }
+    await sleep(500);
+    return retryableFetch(input, init, retryCount);
+  }
+}

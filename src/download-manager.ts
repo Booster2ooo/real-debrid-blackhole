@@ -14,11 +14,10 @@ import {
   FetchDownloader,
   ReadDebridClient
 } from './services/index.js';
-import { resolvePath } from './utils.js';
+import { resolvePath, sleep } from './utils.js';
 
 dotenv.config();
 const argv = process.argv.slice(2);
-const sleep = async (delay: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, delay));
 const logger = l.child({}, { msgPrefix: '[DownloadManager]' });
 
 (async() => {
